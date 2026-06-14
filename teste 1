@@ -1,3 +1,8 @@
+-- ========================================================================
+-- 🌌 BYSHIDO RETRO-CYBER INTRO & LOADING SCREEN (EXACTLY 15s TIMING)
+-- ========================================================================
+-- À coller TOUT EN HAUT de ton exécuteur (avant ton script de dashboard)
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -7,6 +12,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
+-- 🎨 Palette Violet / Blanc / Noir
 local COLOR_BG = Color3.fromRGB(8, 7, 11)        
 local COLOR_MAIN = Color3.fromRGB(157, 78, 221)   
 local COLOR_LIGHT = Color3.fromRGB(240, 230, 255) 
@@ -24,6 +30,7 @@ mainBackground.BackgroundColor3 = COLOR_BG
 mainBackground.BorderSizePixel = 0
 mainBackground.Parent = loadGui
 
+-- 🌌 MOTEUR DE PARTICULES
 local particleContainer = Instance.new("Frame")
 particleContainer.Size = UDim2.fromScale(1, 1)
 particleContainer.BackgroundTransparency = 1
@@ -61,6 +68,7 @@ task.spawn(function()
 	end
 end)
 
+-- 🎯 CONTAINER CENTRAL
 local centerContainer = Instance.new("Frame")
 centerContainer.Size = isMobile and UDim2.fromScale(0.8, 0.4) or UDim2.fromScale(0.4, 0.4)
 centerContainer.Position = UDim2.fromScale(0.5, 0.45)
@@ -80,12 +88,13 @@ titleLabel.TextStrokeTransparency = 0.8
 titleLabel.TextStrokeColor3 = COLOR_MAIN
 titleLabel.Parent = centerContainer
 
+-- Sous-texte de statut (Effet Machine à écrire)
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.fromScale(1, 0.15)
 statusLabel.Position = UDim2.fromScale(0, 0.5)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = ""
-statusLabel.Font = Enum.Font.Code -- Utilisation d'une police "Vieux PC/Code"
+statusLabel.Font = Enum.Font.Code
 statusLabel.TextColor3 = COLOR_ACCENT
 statusLabel.TextSize = isMobile and 14 or 16
 statusLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -109,6 +118,7 @@ Instance.new("UICorner", barProgress).CornerRadius = UDim.new(1, 0)
 local gradient = Instance.new("UIGradient", barProgress)
 gradient.Color = ColorSequence.new(COLOR_MAIN, COLOR_ACCENT)
 
+-- ✨ LOOP PULSATION DU TITRE
 task.spawn(function()
 	while mainBackground.Parent and mainBackground.Visible do
 		local tweenGlow = TweenService:Create(titleLabel, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingStyle.InOut), {
@@ -127,6 +137,7 @@ task.spawn(function()
 	end
 end)
 
+-- ⌨️ FONCTION POUR L'EFFET MACHINE À ÉCRIRE AVEC CURSEUR '_'
 local cursorOn = true
 local currentFullText = ""
 
@@ -136,7 +147,7 @@ task.spawn(function()
 		if string.len(currentFullText) > 0 then
 			statusLabel.Text = currentFullText .. (cursorOn and "_" or " ")
 		end
-		task.wait(0.15) -- Vitesse de clignotement du curseur
+		task.wait(0.15)
 	end
 end)
 
@@ -145,35 +156,38 @@ local function typeWrite(targetText)
 	for i = 1, string.len(targetText) do
 		currentFullText = string.sub(targetText, 1, i)
 		statusLabel.Text = currentFullText .. (cursorOn and "_" or " ")
-		task.wait(0.03) -- Vitesse d'écriture lettre par lettre
+		task.wait(0.015) -- Vitesse d'écriture accélérée pour respecter le timing global
 	end
 end
 
+-- 🔄 PALIERS DE CHARGEMENT SÉQUENTIELS (TOTAL EXACT : 15 SECONDES)
 local loadingSteps = {
-	{progress = 0.15, text = "> Loading Shido Engine..."},
-	{progress = 0.40, text = "> Bypassing Roblox UI Constraints..."},
-	{progress = 0.65, text = "> Fetching Remote Security Handshakes..."},
-	{progress = 0.85, text = "> Optimizing Anti-Lag Systems..."},
-	{progress = 1.00, text = "> Core Loaded. Successfully Injection!"}
+	{progress = 0.15, text = "> Loading Shido Engine...", duration = 2.0, pause = 0.5},
+	{progress = 0.40, text = "> Bypassing Roblox UI Constraints...", duration = 2.0, pause = 0.5},
+	{progress = 0.65, text = "> Fetching Remote Security Handshakes...", duration = 2.0, pause = 0.5},
+	{progress = 0.85, text = "> Optimizing Anti-Lag Systems...", duration = 2.0, pause = 0.5},
+	{progress = 1.00, text = "> Core Loaded. Successfully Injected!", duration = 2.0, pause = 0.8}
 }
 
 task.spawn(function()
+	task.wait(0.5) -- Délai initial d'apparition
+
 	for _, step in ipairs(loadingSteps) do
-
 		typeWrite(step.text)
-
-		local tweenBar = TweenService:Create(barProgress, TweenInfo.new(math.random(5, 10)/10, Enum.EasingStyle.Quad, Enum.EasingOut), {
+		
+		local tweenBar = TweenService:Create(barProgress, TweenInfo.new(step.duration, Enum.EasingStyle.Quad, Enum.EasingOut), {
 			Size = UDim2.fromScale(step.progress, 1)
 		})
 		tweenBar:Play()
 		tweenBar.Completed:Wait()
 		
-		task.wait(0.4) -- Pause sur le message écrit
+		task.wait(step.pause)
 	end
-
+	
 	typeWrite("> Welcome.")
-	task.wait(0.6)
+	task.wait(0.7) -- Dernier instant avant la disparition
 
+	-- 🚪 ANIMATION DE TRANSITION FINALE (FADE OUT DE 0.8s)
 	local fadeOutInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingMode.Out)
 	local fadeTween = TweenService:Create(mainBackground, fadeOutInfo, {BackgroundTransparency = 1})
 
