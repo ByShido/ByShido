@@ -151,57 +151,58 @@ local function typeWrite(targetText)
 	for i = 1, string.len(targetText) do
 		currentFullText = string.sub(targetText, 1, i)
 		statusLabel.Text = currentFullText .. (cursorOn and "_" or " ")
-		task.wait(0.015) -- Vitesse d'écriture accélérée pour respecter le timing global
+		task.wait(0.03) -- Retour à la vitesse d'écriture d'origine (lettre par lettre fluide)
 	end
 end
 
--- 🔄 PALIERS DE CHARGEMENT SÉQUENTIELS (TOTAL EXACT : 15 SECONDES)
+-- 🔄 PALIERS DE CHARGEMENT SÉQUENTIELS (TIMING D'ORIGINE FLUIDE ET RÉALISTE)
 local loadingSteps = {
-	{progress = 0.15, text = "> Loading Shido Engine...", duration = 2.0, pause = 0.5},
-	{progress = 0.40, text = "> Bypassing Roblox UI Constraints...", duration = 2.0, pause = 0.5},
-	{progress = 0.65, text = "> Fetching Remote Security Handshakes...", duration = 2.0, pause = 0.5},
-	{progress = 0.85, text = "> Optimizing Anti-Lag Systems...", duration = 2.0, pause = 0.5},
-	{progress = 1.00, text = "> Core Loaded. Successfully Injected!", duration = 2.0, pause = 0.8}
+	{progress = 0.15, text = "> Loading Shido Engine..."},
+	{progress = 0.40, text = "> Bypassing Roblox UI Constraints..."},
+	{progress = 0.65, text = "> Fetching Remote Security Handshakes..."},
+	{progress = 0.85, text = "> Optimizing Anti-Lag Systems..."},
+	{progress = 1.00, text = "> Core Loaded. Successfully Injected!"}
 }
 
-task.spawn(function()
-	task.wait(0.5) -- Délai initial d'apparition
+-- SÉQUENCE PRINCIPALE (Bloque le code du dessous de manière propre et séquentielle)
+task.wait(0.2) 
 
-	for _, step in ipairs(loadingSteps) do
-		typeWrite(step.text)
-		
-		local tweenBar = TweenService:Create(barProgress, TweenInfo.new(step.duration, Enum.EasingStyle.Quad, Enum.EasingOut), {
-			Size = UDim2.fromScale(step.progress, 1)
-		})
-		tweenBar:Play()
-		tweenBar.Completed:Wait()
-		
-		task.wait(step.pause)
-	end
+for _, step in ipairs(loadingSteps) do
+	typeWrite(step.text)
 	
-	typeWrite("> Welcome.")
-	task.wait(0.7) -- Dernier instant avant la disparition
+	-- Progression fluide et réaliste de la barre (vitesse variable de l'ancienne version)
+	local tweenBar = TweenService:Create(barProgress, TweenInfo.new(math.random(6, 14)/10, Enum.EasingStyle.Quad, Enum.EasingOut), {
+		Size = UDim2.fromScale(step.progress, 1)
+	})
+	tweenBar:Play()
+	tweenBar.Completed:Wait()
+	
+	task.wait(math.random(2, 5)/10) -- Petit temps d'arrêt réaliste
+end
 
-	-- 🚪 ANIMATION DE TRANSITION FINALE (FADE OUT DE 0.8s)
-	local fadeOutInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingMode.Out)
-	local fadeTween = TweenService:Create(mainBackground, fadeOutInfo, {BackgroundTransparency = 1})
+typeWrite("> Welcome.")
+task.wait(0.5) 
 
-	for _, child in ipairs(centerContainer:GetChildren()) do
-		if child:IsA("TextLabel") then
-			TweenService:Create(child, fadeOutInfo, {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
-		elseif child:IsA("Frame") then
-			TweenService:Create(child, fadeOutInfo, {BackgroundTransparency = 1}):Play()
-			if child:FindFirstChildOfClass("Frame") then
-				TweenService:Create(child:FindFirstChildOfClass("Frame"), fadeOutInfo, {BackgroundTransparency = 1}):Play()
-			end
+-- 🚪 ANIMATION DE TRANSITION FINALE (FADE OUT DE 0.8s)
+local fadeOutInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingMode.Out)
+local fadeTween = TweenService:Create(mainBackground, fadeOutInfo, {BackgroundTransparency = 1})
+
+for _, child in ipairs(centerContainer:GetChildren()) do
+	if child:IsA("TextLabel") then
+		TweenService:Create(child, fadeOutInfo, {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
+	elseif child:IsA("Frame") then
+		TweenService:Create(child, fadeOutInfo, {BackgroundTransparency = 1}):Play()
+		if child:FindFirstChildOfClass("Frame") then
+			TweenService:Create(child:FindFirstChildOfClass("Frame"), fadeOutInfo, {BackgroundTransparency = 1}):Play()
 		end
 	end
+end
 
-	fadeTween:Play()
-	fadeTween.Completed:Wait()
+fadeTween:Play()
+fadeTween.Completed:Wait()
 
-	loadGui:Destroy()
-end)
+loadGui:Destroy()
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
