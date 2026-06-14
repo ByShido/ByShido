@@ -36,6 +36,9 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 	end
 end
 
+-- Variable de contrôle pour l'affichage du bouton
+local isIntroDone = false
+
 -- ========================================================================
 -- [PARTIE 1] 💾 INTRO LOADING SCREEN RETRO (FLUIDE ET SÉCURISÉ)
 -- ========================================================================
@@ -51,11 +54,6 @@ loadBackground.Size = UDim2.fromScale(1, 1)
 loadBackground.BackgroundColor3 = COLOR_BG
 loadBackground.BorderSizePixel = 0
 loadBackground.Parent = loadGui
-
--- Sécurité d'autodestruction absolue au cas où (6 secondes max)
-task.delay(6, function()
-	if loadGui and loadGui.Parent then loadGui:Destroy() end
-end)
 
 -- Étoiles / Particules en arrière-plan
 local particleContainer = Instance.new("Frame")
@@ -158,7 +156,8 @@ local function typeWrite(targetText)
 	end
 end
 
-local introFinished = Instance.new("BindableEvent")
+-- Déclenchement de l'intro
+local toggleBtn -- Référence globale pour plus tard
 
 task.spawn(function()
 	local loadingSteps = {
@@ -198,15 +197,23 @@ task.spawn(function()
 		end
 		task.wait(0.3)
 		loadGui:Destroy()
-		introFinished:Fire()
+		
+		isIntroDone = true
+		if toggleBtn then
+			toggleBtn.Visible = true -- Force l'apparition immédiate si l'interface est prête
+		end
 	end
 end)
+
+-- ========================================================================
+-- [PARTIE 2] 📊 SCRIPT PRINCIPAL DASHBOARD (RETRO STYLE + ANIMATION TV)
+-- ========================================================================
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "RollDashboard_Master"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
-gui.DisplayOrder = 500000 -- L'écran se met en dessous du bouton d'ouverture
+gui.DisplayOrder = 500000 
 gui.Parent = playerGui
 
 local blackFrame = Instance.new("Frame")
@@ -224,14 +231,14 @@ notificationArea.Position = isMobile and UDim2.fromScale(0.05, 0.85) or UDim2.fr
 notificationArea.BackgroundTransparency = 1
 notificationArea.Parent = blackFrame
 
--- 💾 BOUTON DE CONTRÔLE SÉPARÉ (Superposition Prioritaire absolue)
+-- 💾 BOUTON DE CONTRÔLE SÉPARÉ (Toujours au premier plan)
 local buttonGui = Instance.new("ScreenGui")
 buttonGui.Name = "ByshidoToggleButtonGui"
-buttonGui.DisplayOrder = 999999 -- Reste au-dessus de TOUT, cliquable à l'infini
+buttonGui.DisplayOrder = 999999
 buttonGui.IgnoreGuiInset = true
 buttonGui.Parent = playerGui
 
-local toggleBtn = Instance.new("TextButton")
+toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = isMobile and UDim2.fromOffset(42, 42) or UDim2.fromOffset(34, 34)
 toggleBtn.Position = isMobile and UDim2.new(0.02, 0, 0.15, 0) or UDim2.new(0.01, 0, 0.02, 0)
 toggleBtn.BackgroundColor3 = COLOR_FRAME
@@ -239,16 +246,12 @@ toggleBtn.TextColor3 = COLOR_GLOW
 toggleBtn.Font = Enum.Font.Code
 toggleBtn.TextSize = isMobile and 16 or 13
 toggleBtn.Text = "[O]"
-toggleBtn.Visible = false
+toggleBtn.Visible = isIntroDone -- Dépend de l'état du chargement
 toggleBtn.Parent = buttonGui
 
 local btnStroke = Instance.new("UIStroke", toggleBtn)
 btnStroke.Color = COLOR_GLOW
 btnStroke.Thickness = 1.5
-
-introFinished.Event:Connect(function()
-	toggleBtn.Visible = true
-end)
 
 -- 📺 LOGIQUE DE L'EFFET RETRO CATHODIQUE (CRT)
 local isMenuOpen = false
@@ -426,166 +429,4 @@ end
 -- 📊 GRID DE STATISTIQUES (TOP PANEL RETRO)
 local infoContainer = Instance.new("Frame")
 infoContainer.Size = isMobile and UDim2.fromScale(0.94, 0.18) or UDim2.fromScale(0.96, 0.12)
-infoContainer.Position = isMobile and UDim2.fromScale(0.03, 0.04) or UDim2.fromScale(0.02, 0.04)
-infoContainer.BackgroundColor3 = COLOR_FRAME
-infoContainer.Parent = blackFrame
-
-local infoStroke = Instance.new("UIStroke", infoContainer)
-infoStroke.Color = COLOR_MUTED
-infoStroke.Thickness = 1
-
-local gridLayout = Instance.new("UIGridLayout", infoContainer)
-gridLayout.CellSize = isMobile and UDim2.fromScale(0.48, 0.28) or UDim2.fromScale(0.155, 0.70)
-gridLayout.CellPadding = isMobile and UDim2.fromScale(0.02, 0.05) or UDim2.fromScale(0.012, 0)
-gridLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local function createStatCard(initialText)
-	local card = Instance.new("Frame")
-	card.BackgroundColor3 = COLOR_CARD
-	card.BorderSizePixel = 0
-	card.Parent = infoContainer
-	
-	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.fromScale(0.9, 0.8)
-	lbl.Position = UDim2.fromScale(0.05, 0.1)
-	lbl.BackgroundTransparency = 1
-	lbl.TextColor3 = COLOR_MUTED
-	lbl.Font = Enum.Font.Code
-	lbl.TextScaled = true
-	lbl.Text = initialText
-	lbl.Parent = card
-	return lbl
-end
-
-local sessionRollLabel = createStatCard("SES_ROLL: 0")
-local totalRollLabel = createStatCard("TOTAL_R: --")
-local clockLabel = createStatCard("TIME: --:--")
-local timeLabel = createStatCard("ONLINE: 00h 00m")
-local batteryLabel = createStatCard("BATTERY: --%")
-local perfLabel = createStatCard("PING: --ms")
-
--- 🛡️ MOTEUR ANTI-IDLE SECURE & RECONNEXION
-local function antiIdleAction()
-	pcall(function()
-		local camera = workspace.CurrentCamera
-		VirtualUser:CaptureController()
-		VirtualUser:ClickButton2(Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2))
-	end)
-end
-
-player.Idled:Connect(antiIdleAction)
-
-task.spawn(function()
-	while true do
-		task.wait(math.random(40, 85))
-		antiIdleAction()
-		if os.time() % 300 < 90 then
-			pcall(function()
-				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z, false, game)
-				task.wait(0.05)
-				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Z, false, game)
-			end)
-		end
-	end
-end)
-
-local function safeReconnect()
-	pcall(function()
-		StarterGui:SetCore("SendNotification", {
-			Title = ">> SYSTEM ALERT",
-			Text = "Disconnect detected. Reconnecting...",
-			Duration = 5
-		})
-	end)
-	task.wait(5)
-	pcall(function() TeleportService:Teleport(PLACE_ID, player) end)
-end
-
-local robloxPromptGui = CoreGui:WaitForChild("RobloxPromptGui", 10)
-if robloxPromptGui then
-	robloxPromptGui.ChildRemoved:Connect(function(child)
-		if child.Name == "ErrorPrompt" then safeReconnect() end
-	end)
-end
-
--- 🧠 TRADUCTION DES EVENEMENTS RESEAU (ASYNCHRONE)
-local rollSession = 0
-local currentHour = os.date("*t").hour
-rollsByHour[currentHour] = 0
-
-local function spawnToast(itemName)
-	notificationArea:ClearAllChildren()
-	local toast = Instance.new("TextLabel")
-	toast.Size = UDim2.fromScale(1, 1)
-	toast.BackgroundTransparency = 1
-	toast.TextColor3 = COLOR_TEXT
-	toast.Font = Enum.Font.Code
-	toast.TextScaled = true
-	toast.Text = ">> DROPPED: " .. string.upper(itemName)
-	toast.Parent = notificationArea
-end
-
-task.spawn(function()
-	local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 10)
-	local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 10)
-	
-	if remote then
-		remote.OnClientEvent:Connect(function(name, amount, action)
-			if typeof(action) == "string" and string.lower(action):find("sell") then return end
-
-			rollSession += 1
-			sessionRollLabel.Text = "SES_ROLL: " .. rollSession
-			task.spawn(spawnToast, tostring(name))
-
-			historyData[name] = (historyData[name] or 0) + 1
-			updateHistoryUI(name)
-
-			local now = os.date("*t")
-			if now.hour ~= currentHour then
-				currentHour = now.hour
-				rollsByHour[currentHour] = 0
-			end
-			rollsByHour[currentHour] = (rollsByHour[currentHour] or 0) + 1
-			updateHourUI(currentHour, rollsByHour[currentHour])
-		end)
-	end
-end)
-
--- ⏳ SYSTEM LOOP MONITORING (1 SEC)
-local startTime = os.time()
-
-task.spawn(function()
-	updateHourUI(currentHour, 0)
-	while true do
-		local now = os.date("*t")
-		clockLabel.Text = string.format("SYS_T: %02d:%02d:%02d", now.hour, now.min, now.sec)
-
-		local elapsed = os.time() - startTime
-		local h = math.floor(elapsed / 3600)
-		local m = math.floor((elapsed % 3600) / 60)
-		timeLabel.Text = string.format("UPTIME: %02dh %02dm", h, m)
-
-		local leaderstats = player:FindFirstChild("leaderstats")
-		local totalRollsValue = leaderstats and leaderstats:FindFirstChild("Rolls")
-		if totalRollsValue and totalRollsValue:IsA("ValueBase") then
-			totalRollLabel.Text = "TOTAL_R: " .. tostring(totalRollsValue.Value)
-		end
-
-		-- Batterie Phosphore / Rétro
-		local batteryLevel = math.round(GuiService:GetBatteryLevel() * 100)
-		batteryLabel.Text = string.format("BATTERY: %d%%", batteryLevel)
-		if batteryLevel > 50 then batteryLabel.TextColor3 = COLOR_SUCCESS
-		elseif batteryLevel > 20 then batteryLabel.TextColor3 = COLOR_TEXT
-		else batteryLabel.TextColor3 = COLOR_ALERT end
-
-		-- Réseau Ping
-		local ping = math.round(Stats.Network.ServerToClientPing:GetValue() * 100)
-		perfLabel.Text = string.format("PING: %dms", ping)
-		if ping < 100 then perfLabel.TextColor3 = COLOR_SUCCESS
-		elseif ping < 200 then perfLabel.TextColor3 = COLOR_TEXT
-		else perfLabel.TextColor3 = COLOR_ALERT end
-
-		task.wait(1)
-	end
-end)
+infoContainer.Position = isMobile and UDim2.fromScale(0.
