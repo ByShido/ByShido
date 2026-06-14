@@ -1,3 +1,7 @@
+-- ========================================================================
+-- 🌌 BYSHIDO TERMINAL SYSTEM (FAKE LOADING AUTONOME & RETRO CRT UI)
+-- ========================================================================
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
@@ -26,7 +30,7 @@ local COLOR_ALERT = Color3.fromRGB(255, 42, 102)
 local COLOR_SUCCESS = Color3.fromRGB(50, 255, 140)  
 
 -- ========================================================================
--- [PARTIE 1] 💾 INTRO LOADING SCREEN (BYSHIDO RETRO TERMINAL)
+-- [PARTIE 1] 💾 FAKE INTRO LOADING SCREEN (VISUEL UNIQUEMENT)
 -- ========================================================================
 
 local loadGui = Instance.new("ScreenGui")
@@ -135,35 +139,34 @@ local function typeWrite(targetText)
 	for i = 1, string.len(targetText) do
 		currentFullText = string.sub(targetText, 1, i)
 		statusLabel.Text = currentFullText .. (cursorOn and "_" or " ")
-		task.wait(0.02)
+		task.wait(0.015)
 	end
 end
 
 local loadingSteps = {
-	{progress = 0.15, text = "SYSTEM: Booting Shido Core..."},
-	{progress = 0.40, text = "NET: Piercing Roblox UI layers..."},
-	{progress = 0.70, text = "SEC: Clearing secure handshake protocols..."},
-	{progress = 0.90, text = "SYS: Stabilizing retro UI components..."},
-	{progress = 1.00, text = "SUCCESS: Execution completed!"}
+	{progress = 0.20, text = "SYS: Initializing Byshido OS v1.98..."},
+	{progress = 0.45, text = "CRT: Calibrating cathode-ray tube grid..."},
+	{progress = 0.75, text = "MEM: Allocating memory buffer blocks..."},
+	{progress = 1.00, text = "SYSTEM: Ready for deployment."}
 }
 
 task.wait(0.3)
 
 for _, step in ipairs(loadingSteps) do
 	typeWrite(step.text)
-	local tweenBar = TweenService:Create(barProgress, TweenInfo.new(math.random(5, 12)/10, Enum.EasingStyle.Quad, Enum.EasingOut), {
+	local tweenBar = TweenService:Create(barProgress, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingOut), {
 		Size = UDim2.fromScale(step.progress, 1)
 	})
 	tweenBar:Play()
 	tweenBar.Completed:Wait()
-	task.wait(0.2)
+	task.wait(0.15)
 end
 
-typeWrite("LAUNCHING: Welcome user.")
-task.wait(0.6)
+typeWrite("EXECUTION COMPLETE.")
+task.wait(0.4)
 
--- Dissolution forcée et destruction du Loading
-local fadeOutInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingMode.Out)
+-- Dissolution de l'intro
+local fadeOutInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingMode.Out)
 TweenService:Create(loadBackground, fadeOutInfo, {BackgroundTransparency = 1}):Play()
 for _, child in ipairs(centerContainer:GetChildren()) do
 	if child:IsA("TextLabel") then
@@ -172,16 +175,12 @@ for _, child in ipairs(centerContainer:GetChildren()) do
 		TweenService:Create(child, fadeOutInfo, {BackgroundTransparency = 1}):Play()
 	end
 end
-task.wait(0.6)
+task.wait(0.4)
 loadGui:Destroy()
 
--- Sécurité anti-blocage : La remote est vérifiée ICI. Si elle manque, le chargement s'est quand même fermé !
-local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 10)
-local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 10)
-if not remote then 
-	warn("BYSHIDO ERROR: Remote 'UpdateMountInventory' non trouvée !")
-	return 
-end
+-- ========================================================================
+-- [PARTIE 2] 📊 SCRIPT PRINCIPAL DASHBOARD (RETRO STYLE + ANIMATION TV)
+-- ========================================================================
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "RollDashboard_Master"
@@ -190,6 +189,7 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 999999
 gui.Parent = playerGui
 
+-- Cadre principal TV (Écrasé au milieu par défaut : Hauteur 0, Position Y 0.5)
 local blackFrame = Instance.new("Frame")
 blackFrame.Size = UDim2.fromScale(1, 0) 
 blackFrame.Position = UDim2.fromScale(0, 0.5) 
@@ -205,6 +205,7 @@ notificationArea.Position = isMobile and UDim2.fromScale(0.05, 0.45) or UDim2.fr
 notificationArea.BackgroundTransparency = 1
 notificationArea.Parent = blackFrame
 
+-- Bouton d'activation [O] / [X]
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = isMobile and UDim2.fromOffset(42, 42) or UDim2.fromOffset(34, 34)
 toggleBtn.Position = isMobile and UDim2.new(0.02, 0, 0.15, 0) or UDim2.new(0.01, 0, 0.02, 0)
@@ -222,6 +223,7 @@ btnStroke.Thickness = 1.5
 local isMenuOpen = false
 local isAnimating = false
 
+-- 📺 EFFET D'ÉTEIGNAGE ET ALLUMAGE VERTICAL TYPE VIEILLE TV (CRT)
 local function toggleDashboard()
 	if isAnimating then return end 
 	isAnimating = true
@@ -233,6 +235,7 @@ local function toggleDashboard()
 		toggleBtn.TextColor3 = COLOR_ALERT
 		btnStroke.Color = COLOR_ALERT
 		
+		-- Allumage : s'écarte vers le haut et le bas depuis le milieu
 		local tvOpenTween = TweenService:Create(blackFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingMode.Out), {
 			Size = UDim2.fromScale(1, 1),
 			Position = UDim2.fromScale(0, 0)
@@ -245,6 +248,7 @@ local function toggleDashboard()
 		toggleBtn.TextColor3 = COLOR_GLOW
 		btnStroke.Color = COLOR_GLOW
 		
+		-- Extinction : se resserre verticalement vers le centre
 		local tvCloseTween = TweenService:Create(blackFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingMode.In), {
 			Size = UDim2.fromScale(1, 0),
 			Position = UDim2.fromScale(0, 0.5)
@@ -391,7 +395,7 @@ local function updateHourUI(hour, count)
 	hourScroll.CanvasSize = UDim2.new(0, 0, 0, hourListLayout.AbsoluteContentSize.Y + 10)
 end
 
--- 📊 GRID DE STATISTIQUES (TOP PANEL RETRO)
+-- 📊 GRID DE STATISTIQUES (TOP PANEL)
 local infoContainer = Instance.new("Frame")
 infoContainer.Size = isMobile and UDim2.fromScale(0.94, 0.18) or UDim2.fromScale(0.96, 0.12)
 infoContainer.Position = isMobile and UDim2.fromScale(0.03, 0.04) or UDim2.fromScale(0.02, 0.04)
@@ -477,7 +481,7 @@ if robloxPromptGui then
 	end)
 end
 
--- 🧠 TRAITEMENT DES EVENEMENTS
+-- 🧠 RECONNEXION EVENT DE DOUBLE-SÉCURITÉ SUR LA REMOTE
 local rollSession = 0
 local currentHour = os.date("*t").hour
 rollsByHour[currentHour] = 0
@@ -494,23 +498,30 @@ local function spawnToast(itemName)
 	toast.Parent = notificationArea
 end
 
-remote.OnClientEvent:Connect(function(name, amount, action)
-	if typeof(action) == "string" and string.lower(action):find("sell") then return end
+-- Écoute de la remote en tâche de fond sécurisée (ne bloque pas le script)
+task.spawn(function()
+	local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 5)
+	local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 5)
+	if remote then
+		remote.OnClientEvent:Connect(function(name, amount, action)
+			if typeof(action) == "string" and string.lower(action):find("sell") then return end
 
-	rollSession += 1
-	sessionRollLabel.Text = "SES_ROLL: " .. rollSession
-	task.spawn(spawnToast, tostring(name))
+			rollSession += 1
+			sessionRollLabel.Text = "SES_ROLL: " .. rollSession
+			task.spawn(spawnToast, tostring(name))
 
-	historyData[name] = (historyData[name] or 0) + 1
-	updateHistoryUI(name)
+			historyData[name] = (historyData[name] or 0) + 1
+			updateHistoryUI(name)
 
-	local now = os.date("*t")
-	if now.hour ~= currentHour then
-		currentHour = now.hour
-		rollsByHour[currentHour] = 0
+			local now = os.date("*t")
+			if now.hour ~= currentHour then
+				currentHour = now.hour
+				rollsByHour[currentHour] = 0
+			end
+			rollsByHour[currentHour] = (rollsByHour[currentHour] or 0) + 1
+			updateHourUI(currentHour, rollsByHour[currentHour])
+		end)
 	end
-	rollsByHour[currentHour] = (rollsByHour[currentHour] or 0) + 1
-	updateHourUI(currentHour, rollsByHour[currentHour])
 end)
 
 -- ⏳ SYSTEM LOOP MONITORING (1 SEC)
