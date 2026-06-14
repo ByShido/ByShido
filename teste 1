@@ -1,5 +1,5 @@
 -- ========================================================================
--- 🌌 BYSHIDO TERMINAL SYSTEM (FULL RETRO DESIGN & CRT TV ANIMATION)
+-- 🌌 BYSHIDO TERMINAL SYSTEM (ANTI-BLOCK SÉCURISÉ & INDÉPENDANT)
 -- ========================================================================
 
 local Players = game:GetService("Players")
@@ -19,17 +19,17 @@ local PLACE_ID = game.PlaceId
 local playerGui = player:WaitForChild("PlayerGui")
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
--- 🎨 RETRO PALETTE (Vieux Moniteur Cyber)
-local COLOR_BG = Color3.fromRGB(5, 4, 6)          -- Noir Terminal
-local COLOR_FRAME = Color3.fromRGB(12, 10, 15)     -- Fond Sombre
-local COLOR_CARD = Color3.fromRGB(20, 16, 26)      -- Bloc Interne
-local COLOR_GLOW = Color3.fromRGB(187, 68, 255)    -- Violet Néon Cathodique
-local COLOR_TEXT = Color3.fromRGB(240, 230, 255)    -- Blanc Lumineux
-local COLOR_MUTED = Color3.fromRGB(130, 110, 150)   -- Violet Éteint
-local COLOR_ALERT = Color3.fromRGB(255, 42, 102)   -- Rouge Alerte Néon
-local COLOR_SUCCESS = Color3.fromRGB(50, 255, 140)  -- Vert Phosphore
+-- 🎨 RETRO PALETTE
+local COLOR_BG = Color3.fromRGB(5, 4, 6)          
+local COLOR_FRAME = Color3.fromRGB(12, 10, 15)     
+local COLOR_CARD = Color3.fromRGB(20, 16, 26)      
+local COLOR_GLOW = Color3.fromRGB(187, 68, 255)    
+local COLOR_TEXT = Color3.fromRGB(240, 230, 255)    
+local COLOR_MUTED = Color3.fromRGB(130, 110, 150)   
+local COLOR_ALERT = Color3.fromRGB(255, 42, 102)   
+local COLOR_SUCCESS = Color3.fromRGB(50, 255, 140)  
 
--- Nettoyage préventif complet avant exécution
+-- Nettoyage préventif agressif
 for _, oldGui in ipairs(playerGui:GetChildren()) do
 	if oldGui.Name == "RollDashboard_Master" or oldGui.Name == "ShidoLoading_System" or oldGui.Name == "ByshidoToggleButtonGui" then
 		oldGui:Destroy()
@@ -37,13 +37,36 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 end
 
 -- ========================================================================
--- [PARTIE 1] 💾 INTRO LOADING SCREEN RETRO (FLUIDE ET SÉCURISÉ)
+-- [BLOC 1] 💾 LE BOUTON D'OUVERTURE (CRÉÉ EN PREMIER, PRIORITÉ ABSOLUE)
 -- ========================================================================
+local buttonGui = Instance.new("ScreenGui")
+buttonGui.Name = "ByshidoToggleButtonGui"
+buttonGui.DisplayOrder = 9999999 -- Priorité maximale sur tout l'écran
+buttonGui.IgnoreGuiInset = true
+buttonGui.Parent = playerGui
 
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = isMobile and UDim2.fromOffset(45, 45) or UDim2.fromOffset(36, 36)
+toggleBtn.Position = isMobile and UDim2.new(0.02, 0, 0.15, 0) or UDim2.new(0.01, 0, 0.02, 0)
+toggleBtn.BackgroundColor3 = COLOR_FRAME
+toggleBtn.TextColor3 = COLOR_GLOW
+toggleBtn.Font = Enum.Font.Code
+toggleBtn.TextSize = isMobile and 16 or 14
+toggleBtn.Text = "[O]"
+toggleBtn.Visible = true -- IL EST LÀ IMMÉDIATEMENT, AUCUNE ATTENTE
+toggleBtn.Parent = buttonGui
+
+local btnStroke = Instance.new("UIStroke", toggleBtn)
+btnStroke.Color = COLOR_GLOW
+btnStroke.Thickness = 2
+
+-- ========================================================================
+-- [BLOC 2] 💾 L'ÉCRAN DE CHARGEMENT INTRO
+-- ========================================================================
 local loadGui = Instance.new("ScreenGui")
 loadGui.Name = "ShidoLoading_System"
 loadGui.IgnoreGuiInset = true
-loadGui.DisplayOrder = 9999999 
+loadGui.DisplayOrder = 999999 -- Juste en dessous du bouton
 loadGui.Parent = playerGui
 
 local loadBackground = Instance.new("Frame")
@@ -51,46 +74,6 @@ loadBackground.Size = UDim2.fromScale(1, 1)
 loadBackground.BackgroundColor3 = COLOR_BG
 loadBackground.BorderSizePixel = 0
 loadBackground.Parent = loadGui
-
--- Sécurité d'autodestruction absolue au cas où (6 secondes max)
-task.delay(6, function()
-	if loadGui and loadGui.Parent then loadGui:Destroy() end
-end)
-
--- Étoiles / Particules en arrière-plan
-local particleContainer = Instance.new("Frame")
-particleContainer.Size = UDim2.fromScale(1, 1)
-particleContainer.BackgroundTransparency = 1
-particleContainer.Parent = loadBackground
-
-local function spawnParticle()
-	if not loadBackground.Parent then return end
-	local p = Instance.new("Frame")
-	p.Size = UDim2.fromOffset(math.random(2, 3), math.random(2, 3))
-	p.Position = UDim2.fromScale(math.random(), math.random(0.1, 0.9))
-	p.BackgroundColor3 = math.random(1, 2) == 1 and COLOR_GLOW or COLOR_TEXT
-	p.BackgroundTransparency = 0.5
-	p.BorderSizePixel = 0
-	p.Parent = particleContainer
-	
-	local randomX = p.Position.X.Scale + (math.random(-3, 3) / 100)
-	local randomY = p.Position.Y.Scale - (math.random(1, 4) / 10)
-	
-	local tween = TweenService:Create(p, TweenInfo.new(math.random(4, 7), Enum.EasingStyle.Linear), {
-		Position = UDim2.fromScale(randomX, randomY),
-		BackgroundTransparency = 1
-	})
-	tween:Play()
-	tween.Completed:Connect(function() p:Destroy() end)
-end
-
-task.spawn(function()
-	for i = 1, 20 do spawnParticle() end
-	while loadBackground.Parent and loadBackground.Visible do
-		spawnParticle()
-		task.wait(0.25)
-	end
-end)
 
 local centerContainer = Instance.new("Frame")
 centerContainer.Size = isMobile and UDim2.fromScale(0.8, 0.4) or UDim2.fromScale(0.4, 0.4)
@@ -107,15 +90,13 @@ titleLabel.Text = "[ BY SHIDO ]"
 titleLabel.Font = Enum.Font.Code
 titleLabel.TextColor3 = COLOR_TEXT
 titleLabel.TextSize = isMobile and 36 or 48
-titleLabel.TextStrokeTransparency = 0.7
-titleLabel.TextStrokeColor3 = COLOR_GLOW
 titleLabel.Parent = centerContainer
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.fromScale(1, 0.15)
 statusLabel.Position = UDim2.fromScale(0, 0.5)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = ""
+statusLabel.Text = "SYSTEM: Initializing..."
 statusLabel.Font = Enum.Font.Code
 statusLabel.TextColor3 = COLOR_GLOW
 statusLabel.TextSize = isMobile and 13 or 15
@@ -134,78 +115,28 @@ barProgress.BackgroundColor3 = COLOR_GLOW
 barProgress.BorderSizePixel = 0
 barProgress.Parent = barBackground
 
-local cursorOn = true
-local currentFullText = ""
-
+-- Animation fluide de la barre
 task.spawn(function()
-	while loadBackground.Parent and loadBackground.Visible do
-		cursorOn = not cursorOn
-		if string.len(currentFullText) > 0 then
-			statusLabel.Text = currentFullText .. (cursorOn and "_" or " ")
-		end
-		task.wait(0.18)
-	end
-end)
-
-local function typeWrite(targetText)
-	currentFullText = ""
-	for i = 1, string.len(targetText) do
-		currentFullText = string.sub(targetText, 1, i)
-		if statusLabel.Parent then
-			statusLabel.Text = currentFullText .. (cursorOn and "_" or " ")
-		end
-		task.wait(0.01)
-	end
-end
-
-local introFinished = Instance.new("BindableEvent")
-
-task.spawn(function()
-	local loadingSteps = {
-		{progress = 0.20, text = "SYSTEM: Booting Shido Core..."},
-		{progress = 0.45, text = "NET: Piercing Roblox UI layers..."},
-		{progress = 0.70, text = "SEC: Clearing secure handshake protocols..."},
-		{progress = 0.90, text = "SYS: Stabilizing retro UI components..."},
-		{progress = 1.00, text = "SUCCESS: Execution completed!"}
+	local steps = {
+		{p = 0.25, t = "SYS: Core Booting..."},
+		{p = 0.55, t = "NET: Bypassing Security layers..."},
+		{p = 0.80, t = "UI: Constructing Panels..."},
+		{p = 1.00, t = "SUCCESS: Terminal Ready."}
 	}
-
-	task.wait(0.3)
-
-	for _, step in ipairs(loadingSteps) do
-		if not loadBackground.Parent then break end
-		task.spawn(typeWrite, step.text)
-		
-		local tweenBar = TweenService:Create(barProgress, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingOut), {
-			Size = UDim2.fromScale(step.progress, 1)
-		})
-		tweenBar:Play()
-		tweenBar.Completed:Wait()
+	for _, step in ipairs(steps) do
+		statusLabel.Text = step.t
+		local t = TweenService:Create(barProgress, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingOut), {Size = UDim2.fromScale(step.p, 1)})
+		t:Play()
+		t.Completed:Wait()
 		task.wait(0.1)
 	end
-
-	if loadBackground.Parent then
-		typeWrite("LAUNCHING: Welcome user.")
-		task.wait(0.4)
-
-		local fadeOutInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingMode.Out)
-		TweenService:Create(loadBackground, fadeOutInfo, {BackgroundTransparency = 1}):Play()
-		for _, child in ipairs(centerContainer:GetChildren()) do
-			if child:IsA("TextLabel") then
-				TweenService:Create(child, fadeOutInfo, {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
-			elseif child:IsA("Frame") then
-				TweenService:Create(child, fadeOutInfo, {BackgroundTransparency = 1}):Play()
-			end
-		end
-		task.wait(0.3)
-		loadGui:Destroy()
-		introFinished:Fire()
-	end
+	task.wait(0.2)
+	loadGui:Destroy()
 end)
 
 -- ========================================================================
--- [PARTIE 2] 📊 SCRIPT PRINCIPAL DASHBOARD (RETRO STYLE + ANIMATION TV)
+-- [BLOC 3] 📊 LE MENU DASHBOARD PRINCIPAL
 -- ========================================================================
-
 local gui = Instance.new("ScreenGui")
 gui.Name = "RollDashboard_Master"
 gui.ResetOnSpawn = false
@@ -228,91 +159,13 @@ notificationArea.Position = isMobile and UDim2.fromScale(0.05, 0.20) or UDim2.fr
 notificationArea.BackgroundTransparency = 1
 notificationArea.Parent = blackFrame
 
--- 💾 BOUTON DE CONTRÔLE SURÉLEVÉ ET PERSISTANT
-local buttonGui = Instance.new("ScreenGui")
-buttonGui.Name = "ByshidoToggleButtonGui"
-buttonGui.DisplayOrder = 9999999 -- Reste au-dessus de TOUT l'univers 
-buttonGui.IgnoreGuiInset = true
-buttonGui.Parent = playerGui
-
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = isMobile and UDim2.fromOffset(42, 42) or UDim2.fromOffset(34, 34)
-toggleBtn.Position = isMobile and UDim2.new(0.02, 0, 0.15, 0) or UDim2.new(0.01, 0, 0.02, 0)
-toggleBtn.BackgroundColor3 = COLOR_FRAME
-toggleBtn.TextColor3 = COLOR_GLOW
-toggleBtn.Font = Enum.Font.Code
-toggleBtn.TextSize = isMobile and 16 or 13
-toggleBtn.Text = "[O]"
-toggleBtn.Visible = false
-toggleBtn.Parent = buttonGui
-
-local btnStroke = Instance.new("UIStroke", toggleBtn)
-btnStroke.Color = COLOR_GLOW
-btnStroke.Thickness = 1.5
-
-introFinished.Event:Connect(function()
-	toggleBtn.Visible = true
-end)
-
--- 📺 LOGIQUE DE L'EFFET RETRO CATHODIQUE (CRT)
-local isMenuOpen = false
-local isAnimating = false
-
-local function toggleDashboard()
-	if isAnimating then return end
-	isAnimating = true
-	
-	if not isMenuOpen then
-		blackFrame.Visible = true
-		pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false) end)
-		toggleBtn.Text = "[X]"
-		toggleBtn.TextColor3 = COLOR_ALERT
-		btnStroke.Color = COLOR_ALERT
-		
-		local tvOpenTween = TweenService:Create(blackFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingMode.Out), {
-			Size = UDim2.fromScale(1, 1),
-			Position = UDim2.fromScale(0, 0)
-		})
-		tvOpenTween:Play()
-		tvOpenTween.Completed:Wait()
-		isMenuOpen = true
-	else
-		toggleBtn.Text = "[O]"
-		toggleBtn.TextColor3 = COLOR_GLOW
-		btnStroke.Color = COLOR_GLOW
-		
-		local tvCloseTween = TweenService:Create(blackFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingMode.In), {
-			Size = UDim2.fromScale(1, 0),
-			Position = UDim2.fromScale(0, 0.5)
-		})
-		tvCloseTween:Play()
-		tvCloseTween.Completed:Wait()
-		
-		blackFrame.Visible = false
-		pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end)
-		isMenuOpen = false
-	end
-	
-	isAnimating = false
-end
-
-toggleBtn.MouseButton1Click:Connect(toggleDashboard)
-if not isMobile then
-	UserInputService.InputBegan:Connect(function(input, gpe)
-		if not gpe and input.KeyCode == Enum.KeyCode.K then toggleDashboard() end
-	end)
-end
-
--- 📜 PANNEAU HISTORIQUE DES ITEMS (GAUCHE)
+-- Configuration des Panneaux à l'intérieur
 local historyFrame = Instance.new("Frame")
 historyFrame.Size = isMobile and UDim2.fromScale(0.45, 0.54) or UDim2.fromScale(0.47, 0.62)
 historyFrame.Position = isMobile and UDim2.fromScale(0.03, 0.28) or UDim2.fromScale(0.02, 0.26)
 historyFrame.BackgroundColor3 = COLOR_FRAME
 historyFrame.Parent = blackFrame
-
-local histStroke = Instance.new("UIStroke", historyFrame)
-histStroke.Color = COLOR_MUTED
-histStroke.Thickness = 1
+Instance.new("UIStroke", historyFrame).Color = COLOR_MUTED
 
 local histTitle = Instance.new("TextLabel")
 histTitle.Size = UDim2.fromScale(1, 0.12)
@@ -335,7 +188,128 @@ local listLayout = Instance.new("UIListLayout", scroll)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Padding = UDim.new(0, 5)
 
+local hourFrame = Instance.new("Frame")
+hourFrame.Size = isMobile and UDim2.fromScale(0.45, 0.54) or UDim2.fromScale(0.47, 0.62)
+hourFrame.Position = isMobile and UDim2.fromScale(0.52, 0.28) or UDim2.fromScale(0.51, 0.26)
+hourFrame.BackgroundColor3 = COLOR_FRAME
+hourFrame.Parent = blackFrame
+Instance.new("UIStroke", hourFrame).Color = COLOR_MUTED
+
+local hourTitle = Instance.new("TextLabel")
+hourTitle.Size = UDim2.fromScale(1, 0.12)
+hourTitle.BackgroundTransparency = 1
+hourTitle.Text = ">> STATS_HORAIRES"
+hourTitle.Font = Enum.Font.Code
+hourTitle.TextColor3 = COLOR_TEXT
+hourTitle.TextSize = isMobile and 14 or 16
+hourTitle.Parent = hourFrame
+
+local hourScroll = Instance.new("ScrollingFrame")
+hourScroll.Size = UDim2.fromScale(0.92, 0.82)
+hourScroll.Position = UDim2.fromScale(0.04, 0.15)
+hourScroll.BackgroundTransparency = 1
+hourScroll.ScrollBarThickness = 3
+hourScroll.ScrollBarImageColor3 = COLOR_GLOW
+hourScroll.Parent = hourFrame
+
+local hourListLayout = Instance.new("UIListLayout", hourScroll)
+hourListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+hourListLayout.Padding = UDim.new(0, 5)
+
+-- Stats Grid
+local infoContainer = Instance.new("Frame")
+infoContainer.Size = isMobile and UDim2.fromScale(0.94, 0.14) or UDim2.fromScale(0.96, 0.10)
+infoContainer.Position = isMobile and UDim2.fromScale(0.03, 0.04) or UDim2.fromScale(0.02, 0.05)
+infoContainer.BackgroundColor3 = COLOR_FRAME
+infoContainer.Parent = blackFrame
+Instance.new("UIStroke", infoContainer).Color = COLOR_MUTED
+
+local gridLayout = Instance.new("UIGridLayout", infoContainer)
+gridLayout.CellSize = isMobile and UDim2.fromScale(0.48, 0.28) or UDim2.fromScale(0.155, 0.70)
+gridLayout.CellPadding = isMobile and UDim2.fromScale(0.02, 0.05) or UDim2.fromScale(0.012, 0)
+gridLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local function createStatCard(initialText)
+	local card = Instance.new("Frame")
+	card.BackgroundColor3 = COLOR_CARD
+	card.BorderSizePixel = 0
+	card.Parent = infoContainer
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.fromScale(0.9, 0.8)
+	lbl.Position = UDim2.fromScale(0.05, 0.1)
+	lbl.BackgroundTransparency = 1
+	lbl.TextColor3 = COLOR_MUTED
+	lbl.Font = Enum.Font.Code
+	lbl.TextScaled = true
+	lbl.Text = initialText
+	lbl.Parent = card
+	return lbl
+end
+
+local sessionRollLabel = createStatCard("SES_ROLL: 0")
+local totalRollLabel = createStatCard("TOTAL_R: --")
+local clockLabel = createStatCard("TIME: --:--")
+local timeLabel = createStatCard("ONLINE: 00h 00m")
+local batteryLabel = createStatCard("BATTERY: --%")
+local perfLabel = createStatCard("PING: --ms")
+
+-- ========================================================================
+-- CONTROLE DU BOUTON (INDIRECIABLE ET TOTALEMENT ASYNC)
+-- ========================================================================
+local isMenuOpen = false
+local isAnimating = false
+
+local function toggleDashboard()
+	if isAnimating then return end
+	isAnimating = true
+	
+	if not isMenuOpen then
+		blackFrame.Visible = true
+		pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false) end)
+		toggleBtn.Text = "[X]"
+		toggleBtn.TextColor3 = COLOR_ALERT
+		btnStroke.Color = COLOR_ALERT
+		
+		local openTween = TweenService:Create(blackFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingMode.Out), {
+			Size = UDim2.fromScale(1, 1),
+			Position = UDim2.fromScale(0, 0)
+		})
+		openTween:Play()
+		openTween.Completed:Wait()
+		isMenuOpen = true
+	else
+		toggleBtn.Text = "[O]"
+		toggleBtn.TextColor3 = COLOR_GLOW
+		btnStroke.Color = COLOR_GLOW
+		
+		local closeTween = TweenService:Create(blackFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingMode.In), {
+			Size = UDim2.fromScale(1, 0),
+			Position = UDim2.fromScale(0, 0.5)
+		})
+		closeTween:Play()
+		closeTween.Completed:Wait()
+		
+		blackFrame.Visible = false
+		pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end)
+		isMenuOpen = false
+	end
+	isAnimating = false
+end
+
+toggleBtn.MouseButton1Click:Connect(toggleDashboard)
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if not gpe and input.KeyCode == Enum.KeyCode.K then toggleDashboard() end
+end)
+
+-- ========================================================================
+-- LOGIQUE RESEAU ISOLEE DANS UN THREAD EN ARRIÈRE-PLAN
+-- ========================================================================
 local historyData = {}
+local rollsByHour = {}
+local rollSession = 0
+local currentHour = os.date("*t").hour
+rollsByHour[currentHour] = 0
 
 local function updateHistoryUI(name)
 	local existingRow = scroll:FindFirstChild(name)
@@ -364,44 +338,9 @@ local function updateHistoryUI(name)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
 end
 
--- 🕒 PANNEAU COMPTEUR HORAIRE (DROITE)
-local hourFrame = Instance.new("Frame")
-hourFrame.Size = isMobile and UDim2.fromScale(0.45, 0.54) or UDim2.fromScale(0.47, 0.62)
-hourFrame.Position = isMobile and UDim2.fromScale(0.52, 0.28) or UDim2.fromScale(0.51, 0.26)
-hourFrame.BackgroundColor3 = COLOR_FRAME
-hourFrame.Parent = blackFrame
-
-local hourStroke = Instance.new("UIStroke", hourFrame)
-hourStroke.Color = COLOR_MUTED
-hourStroke.Thickness = 1
-
-local hourTitle = Instance.new("TextLabel")
-hourTitle.Size = UDim2.fromScale(1, 0.12)
-hourTitle.BackgroundTransparency = 1
-hourTitle.Text = ">> STATS_HORAIRES"
-hourTitle.Font = Enum.Font.Code
-hourTitle.TextColor3 = COLOR_TEXT
-hourTitle.TextSize = isMobile and 14 or 16
-hourTitle.Parent = hourFrame
-
-local hourScroll = Instance.new("ScrollingFrame")
-hourScroll.Size = UDim2.fromScale(0.92, 0.82)
-hourScroll.Position = UDim2.fromScale(0.04, 0.15)
-hourScroll.BackgroundTransparency = 1
-hourScroll.ScrollBarThickness = 3
-hourScroll.ScrollBarImageColor3 = COLOR_GLOW
-hourScroll.Parent = hourFrame
-
-local hourListLayout = Instance.new("UIListLayout", hourScroll)
-hourListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-hourListLayout.Padding = UDim.new(0, 5)
-
-local rollsByHour = {}
-
 local function updateHourUI(hour, count)
 	local hourKey = tostring(hour) .. "H"
 	local existingRow = hourScroll:FindFirstChild(hourKey)
-	
 	if existingRow then
 		existingRow.TextLabel.Text = string.format("- TIMELOG %s : %s ROLLS", hourKey, tostring(count))
 	else
@@ -427,169 +366,47 @@ local function updateHourUI(hour, count)
 	hourScroll.CanvasSize = UDim2.new(0, 0, 0, hourListLayout.AbsoluteContentSize.Y + 10)
 end
 
--- 📊 GRID DE STATISTIQUES (TOP PANEL RETRO)
-local infoContainer = Instance.new("Frame")
-infoContainer.Size = isMobile and UDim2.fromScale(0.94, 0.14) or UDim2.fromScale(0.96, 0.10)
-infoContainer.Position = isMobile and UDim2.fromScale(0.03, 0.04) or UDim2.fromScale(0.02, 0.05)
-infoContainer.BackgroundColor3 = COLOR_FRAME
-infoContainer.Parent = blackFrame
-
-local infoStroke = Instance.new("UIStroke", infoContainer)
-infoStroke.Color = COLOR_MUTED
-infoStroke.Thickness = 1
-
-local gridLayout = Instance.new("UIGridLayout", infoContainer)
-gridLayout.CellSize = isMobile and UDim2.fromScale(0.48, 0.28) or UDim2.fromScale(0.155, 0.70)
-gridLayout.CellPadding = isMobile and UDim2.fromScale(0.02, 0.05) or UDim2.fromScale(0.012, 0)
-gridLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local function createStatCard(initialText)
-	local card = Instance.new("Frame")
-	card.BackgroundColor3 = COLOR_CARD
-	card.BorderSizePixel = 0
-	card.Parent = infoContainer
-	
-	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.fromScale(0.9, 0.8)
-	lbl.Position = UDim2.fromScale(0.05, 0.1)
-	lbl.BackgroundTransparency = 1
-	lbl.TextColor3 = COLOR_MUTED
-	lbl.Font = Enum.Font.Code
-	lbl.TextScaled = true
-	lbl.Text = initialText
-	lbl.Parent = card
-	return lbl
-end
-
-local sessionRollLabel = createStatCard("SES_ROLL: 0")
-local totalRollLabel = createStatCard("TOTAL_R: --")
-local clockLabel = createStatCard("TIME: --:--")
-local timeLabel = createStatCard("ONLINE: 00h 00m")
-local batteryLabel = createStatCard("BATTERY: --%")
-local perfLabel = createStatCard("PING: --ms")
-
--- 🛡️ MOTEUR ANTI-IDLE SECURE & RECONNEXION
-local function antiIdleAction()
-	pcall(function()
-		local camera = workspace.CurrentCamera
-		VirtualUser:CaptureController()
-		VirtualUser:ClickButton2(Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2))
-	end)
-end
-
-player.Idled:Connect(antiIdleAction)
-
 task.spawn(function()
-	while true do
-		task.wait(math.random(40, 85))
-		antiIdleAction()
-		if os.time() % 300 < 90 then
-			pcall(function()
-				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z, false, game)
-				task.wait(0.05)
-				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Z, false, game)
-			end)
-		end
-	end
-end)
-
-local function safeReconnect()
-	pcall(function()
-		StarterGui:SetCore("SendNotification", {
-			Title = ">> SYSTEM ALERT",
-			Text = "Disconnect detected. Reconnecting...",
-			Duration = 5
-		})
-	end)
-	task.wait(5)
-	pcall(function() TeleportService:Teleport(PLACE_ID, player) end)
-end
-
-local robloxPromptGui = CoreGui:WaitForChild("RobloxPromptGui", 10)
-if robloxPromptGui then
-	robloxPromptGui.ChildRemoved:Connect(function(child)
-		if child.Name == "ErrorPrompt" then safeReconnect() end
-	end)
-end
-
--- 🧠 TRADUCTION DES EVENEMENTS RESEAU (ASYNCHRONE)
-local rollSession = 0
-local currentHour = os.date("*t").hour
-rollsByHour[currentHour] = 0
-
-local function spawnToast(itemName)
-	notificationArea:ClearAllChildren()
-	local toast = Instance.new("TextLabel")
-	toast.Size = UDim2.fromScale(1, 1)
-	toast.BackgroundTransparency = 1
-	toast.TextColor3 = COLOR_TEXT
-	toast.Font = Enum.Font.Code
-	toast.TextScaled = true
-	toast.Text = ">> DROPPED: " .. string.upper(itemName)
-	toast.Parent = notificationArea
-end
-
-task.spawn(function()
-	local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 10)
-	local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 10)
-	
+	local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 5)
+	local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 5)
 	if remote then
 		remote.OnClientEvent:Connect(function(name, amount, action)
 			if typeof(action) == "string" and string.lower(action):find("sell") then return end
-
-			rollSession += 1
+			rollSession = rollSession + 1
 			sessionRollLabel.Text = "SES_ROLL: " .. rollSession
-			task.spawn(spawnToast, tostring(name))
-
 			historyData[name] = (historyData[name] or 0) + 1
 			updateHistoryUI(name)
-
 			local now = os.date("*t")
-			if now.hour ~= currentHour then
-				currentHour = now.hour
-				rollsByHour[currentHour] = 0
-			end
+			if now.hour ~= currentHour then currentHour = now.hour rollsByHour[currentHour] = 0 end
 			rollsByHour[currentHour] = (rollsByHour[currentHour] or 0) + 1
 			updateHourUI(currentHour, rollsByHour[currentHour])
 		end)
 	end
 end)
 
--- ⏳ SYSTEM LOOP MONITORING (1 SEC)
-local startTime = os.time()
+-- Anti-Idle & Monitoring Loop
+player.Idled:Connect(function()
+	pcall(function()
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new(100, 100))
+	end)
+end)
 
+local startTime = os.time()
 task.spawn(function()
 	updateHourUI(currentHour, 0)
 	while true do
 		local now = os.date("*t")
 		clockLabel.Text = string.format("SYS_T: %02d:%02d:%02d", now.hour, now.min, now.sec)
-
 		local elapsed = os.time() - startTime
-		local h = math.floor(elapsed / 3600)
-		local m = math.floor((elapsed % 3600) / 60)
-		timeLabel.Text = string.format("UPTIME: %02dh %02dm", h, m)
-
+		timeLabel.Text = string.format("UPTIME: %02dh %02dm", math.floor(elapsed / 3600), math.floor((elapsed % 3600) / 60))
+		
 		local leaderstats = player:FindFirstChild("leaderstats")
 		local totalRollsValue = leaderstats and leaderstats:FindFirstChild("Rolls")
-		if totalRollsValue and totalRollsValue:IsA("ValueBase") then
-			totalRollLabel.Text = "TOTAL_R: " .. tostring(totalRollsValue.Value)
-		end
-
-		-- Batterie Phosphore / Rétro
-		local batteryLevel = math.round(GuiService:GetBatteryLevel() * 100)
-		batteryLabel.Text = string.format("BATTERY: %d%%", batteryLevel)
-		if batteryLevel > 50 then batteryLabel.TextColor3 = COLOR_SUCCESS
-		elseif batteryLevel > 20 then batteryLabel.TextColor3 = COLOR_TEXT
-		else batteryLabel.TextColor3 = COLOR_ALERT end
-
-		-- Réseau Ping
-		local ping = math.round(Stats.Network.ServerToClientPing:GetValue() * 100)
-		perfLabel.Text = string.format("PING: %dms", ping)
-		if ping < 100 then perfLabel.TextColor3 = COLOR_SUCCESS
-		elseif ping < 200 then perfLabel.TextColor3 = COLOR_TEXT
-		else perfLabel.TextColor3 = COLOR_ALERT end
-
+		if totalRollsValue then totalRollLabel.Text = "TOTAL_R: " .. tostring(totalRollsValue.Value) end
+		
+		batteryLabel.Text = string.format("BATTERY: %d%%", math.round(GuiService:GetBatteryLevel() * 100))
+		perfLabel.Text = string.format("PING: %dms", math.round(Stats.Network.ServerToClientPing:GetValue() * 100))
 		task.wait(1)
 	end
 end)
