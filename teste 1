@@ -37,7 +37,7 @@ for _, oldGui in ipairs(playerGui:GetChildren()) do
 end
 
 -- ========================================================================
--- [PARTIE 1] 💾 INTRO LOADING SCREEN RETRO (SÉCURISÉ ANTI-BLOCK)
+-- [PARTIE 1] 💾 INTRO LOADING SCREEN RETRO (FLUIDE ET SÉCURISÉ)
 -- ========================================================================
 
 local loadGui = Instance.new("ScreenGui")
@@ -52,9 +52,8 @@ loadBackground.BackgroundColor3 = COLOR_BG
 loadBackground.BorderSizePixel = 0
 loadBackground.Parent = loadGui
 
--- 🛡️ DISPOSITIF DE SÉCURITÉ ABSOLUE (FailSafe)
--- Quoi qu'il arrive, l'écran de chargement disparaît après 6 secondes max
-task.delay(6, function()
+-- Sécurité d'autodestruction absolue au cas où
+task.delay(8, function()
 	if loadGui and loadGui.Parent then loadGui:Destroy() end
 end)
 
@@ -155,38 +154,43 @@ local function typeWrite(targetText)
 		if statusLabel.Parent then
 			statusLabel.Text = currentFullText .. (cursorOn and "_" or " ")
 		end
-		task.wait(0.015)
+		task.wait(0.01)
 	end
 end
 
--- Animation asynchrone pour ne pas bloquer l'initialisation réseau du Dashboard
+-- Événement de fin d'intro pour débloquer le Dashboard
+local introFinished = Instance.new("BindableEvent")
+
 task.spawn(function()
 	local loadingSteps = {
-		{progress = 0.15, text = "SYSTEM: Booting Shido Core..."},
-		{progress = 0.40, text = "NET: Piercing Roblox UI layers..."},
+		{progress = 0.20, text = "SYSTEM: Booting Shido Core..."},
+		{progress = 0.45, text = "NET: Piercing Roblox UI layers..."},
 		{progress = 0.70, text = "SEC: Clearing secure handshake protocols..."},
 		{progress = 0.90, text = "SYS: Stabilizing retro UI components..."},
 		{progress = 1.00, text = "SUCCESS: Execution completed!"}
 	}
 
-	task.wait(0.2)
+	task.wait(0.3)
 
 	for _, step in ipairs(loadingSteps) do
 		if not loadBackground.Parent then break end
-		typeWrite(step.text)
-		local tweenBar = TweenService:Create(barProgress, TweenInfo.new(math.random(3, 7)/10, Enum.EasingStyle.Quad, Enum.EasingOut), {
+		
+		-- Lancement de l'écriture en parallèle
+		task.spawn(typeWrite, step.text)
+		
+		-- Progression de la barre de chargement synchronisée
+		local tweenBar = TweenService:Create(barProgress, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingOut), {
 			Size = UDim2.fromScale(step.progress, 1)
 		})
 		tweenBar:Play()
 		tweenBar.Completed:Wait()
-		task.wait(0.1)
+		task.wait(0.2)
 	end
 
 	if loadBackground.Parent then
 		typeWrite("LAUNCHING: Welcome user.")
-		task.wait(0.4)
+		task.wait(0.5)
 
-		-- Dissolution fluide de l'intro
 		local fadeOutInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingMode.Out)
 		TweenService:Create(loadBackground, fadeOutInfo, {BackgroundTransparency = 1}):Play()
 		for _, child in ipairs(centerContainer:GetChildren()) do
@@ -201,17 +205,13 @@ task.spawn(function()
 		end
 		task.wait(0.4)
 		loadGui:Destroy()
+		introFinished:Fire() -- On signale que le bouton peut s'activer
 	end
 end)
 
 -- ========================================================================
 -- [PARTIE 2] 📊 SCRIPT PRINCIPAL DASHBOARD (RETRO STYLE + ANIMATION TV)
 -- ========================================================================
-
--- Connexion Remote Réseau Léger
-local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 10)
-local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 10)
-if not remote then return end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "RollDashboard_Master"
@@ -220,9 +220,8 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 999999
 gui.Parent = playerGui
 
--- Le Cadre Noir Principal (Celui qui va subir l'effet TV Cathodique)
 local blackFrame = Instance.new("Frame")
-blackFrame.Size = UDim2.fromScale(1, 0) -- Démarre écrasé au milieu
+blackFrame.Size = UDim2.fromScale(1, 0)
 blackFrame.Position = UDim2.fromScale(0, 0.5)
 blackFrame.BackgroundColor3 = COLOR_BG
 blackFrame.BorderSizePixel = 0
@@ -236,7 +235,7 @@ notificationArea.Position = isMobile and UDim2.fromScale(0.05, 0.45) or UDim2.fr
 notificationArea.BackgroundTransparency = 1
 notificationArea.Parent = blackFrame
 
--- 💾 BOUTON DE CONTRÔLE RETRO
+-- Bouton d'ouverture rétro
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = isMobile and UDim2.fromOffset(42, 42) or UDim2.fromOffset(34, 34)
 toggleBtn.Position = isMobile and UDim2.new(0.02, 0, 0.15, 0) or UDim2.new(0.01, 0, 0.02, 0)
@@ -245,13 +244,18 @@ toggleBtn.TextColor3 = COLOR_GLOW
 toggleBtn.Font = Enum.Font.Code
 toggleBtn.TextSize = isMobile and 16 or 13
 toggleBtn.Text = "[O]"
+toggleBtn.Visible = false -- Masqué pendant le loading
 toggleBtn.Parent = gui
 
 local btnStroke = Instance.new("UIStroke", toggleBtn)
 btnStroke.Color = COLOR_GLOW
 btnStroke.Thickness = 1.5
 
--- 📺 LOGIQUE D'ANIMATION DE VIEILLE TÉLÉVISION CATHODIQUE (CRT TV)
+-- Affichage du bouton dès la fin de l'intro
+introFinished.Event:Connect(function()
+	toggleBtn.Visible = true
+end)
+
 local isMenuOpen = false
 local isAnimating = false
 
@@ -510,7 +514,7 @@ if robloxPromptGui then
 	end)
 end
 
--- 🧠 TRAITEMENT DES EVENEMENTS
+-- 🧠 CONNEXION RÉSEAU ASYNCHRONE (NE BLOQUE JAMAIS L'UI)
 local rollSession = 0
 local currentHour = os.date("*t").hour
 rollsByHour[currentHour] = 0
@@ -527,23 +531,30 @@ local function spawnToast(itemName)
 	toast.Parent = notificationArea
 end
 
-remote.OnClientEvent:Connect(function(name, amount, action)
-	if typeof(action) == "string" and string.lower(action):find("sell") then return end
+task.spawn(function()
+	local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 10)
+	local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 10)
+	
+	if remote then
+		remote.OnClientEvent:Connect(function(name, amount, action)
+			if typeof(action) == "string" and string.lower(action):find("sell") then return end
 
-	rollSession += 1
-	sessionRollLabel.Text = "SES_ROLL: " .. rollSession
-	task.spawn(spawnToast, tostring(name))
+			rollSession += 1
+			sessionRollLabel.Text = "SES_ROLL: " .. rollSession
+			task.spawn(spawnToast, tostring(name))
 
-	historyData[name] = (historyData[name] or 0) + 1
-	updateHistoryUI(name)
+			historyData[name] = (historyData[name] or 0) + 1
+			updateHistoryUI(name)
 
-	local now = os.date("*t")
-	if now.hour ~= currentHour then
-		currentHour = now.hour
-		rollsByHour[currentHour] = 0
+			local now = os.date("*t")
+			if now.hour ~= currentHour then
+				currentHour = now.hour
+				rollsByHour[currentHour] = 0
+			end
+			rollsByHour[currentHour] = (rollsByHour[currentHour] or 0) + 1
+			updateHourUI(currentHour, rollsByHour[currentHour])
+		end)
 	end
-	rollsByHour[currentHour] = (rollsByHour[currentHour] or 0) + 1
-	updateHourUI(currentHour, rollsByHour[currentHour])
 end)
 
 -- ⏳ SYSTEM LOOP MONITORING (1 SEC)
