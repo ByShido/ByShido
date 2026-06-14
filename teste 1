@@ -201,6 +201,7 @@ task.spawn(function()
 		introFinished:Fire()
 	end
 end)
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "RollDashboard_Master"
 gui.ResetOnSpawn = false
