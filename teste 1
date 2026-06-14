@@ -1,8 +1,3 @@
--- ========================================================================
--- 🌌 BYSHIDO RETRO-CYBER INTRO & LOADING SCREEN (EXACTLY 15s TIMING)
--- ========================================================================
--- À coller TOUT EN HAUT de ton exécuteur (avant ton script de dashboard)
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
