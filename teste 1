@@ -193,3 +193,390 @@ task.spawn(function()
 
 	loadGui:Destroy()
 end)
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
+local StarterGui = game:GetService("StarterGui")
+local VirtualUser = game:GetService("VirtualUser")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local Stats = game:GetService("Stats")
+local GuiService = game:GetService("GuiService")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+local PLACE_ID = game.PlaceId
+
+-- 🎨 DESIGN SYSTEM
+local THEME = {
+	Background = Color3.fromRGB(10, 10, 12),
+	FrameBg = Color3.fromRGB(18, 18, 22),
+	CardBg = Color3.fromRGB(26, 26, 32),
+	Accent = Color3.fromRGB(0, 212, 255),
+	TextMain = Color3.fromRGB(255, 255, 255),
+	TextMuted = Color3.fromRGB(150, 150, 155),
+	Success = Color3.fromRGB(0, 230, 115),
+	Warning = Color3.fromRGB(255, 160, 0),
+	Alert = Color3.fromRGB(255, 75, 75)
+}
+
+-- 🔌 REMOTE INTERFACE
+local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 10)
+local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 10)
+if not remote then return end
+
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- ==========================================
+-- 🛠️ ARCHITECTURE DU SCREENGUI (PRIORITÉ MAX)
+-- ==========================================
+local gui = Instance.new("ScreenGui")
+gui.Name = "RollDashboard_Master"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 999999
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local blackFrame = Instance.new("Frame")
+blackFrame.Size = UDim2.fromScale(1, 1)
+blackFrame.BackgroundColor3 = THEME.Background
+blackFrame.BorderSizePixel = 0
+blackFrame.Visible = false
+blackFrame.Parent = gui
+
+-- Container des toasts de rolls
+local notificationArea = Instance.new("Frame")
+notificationArea.Size = isMobile and UDim2.fromScale(0.9, 0.1) or UDim2.fromScale(0.4, 0.1)
+notificationArea.Position = isMobile and UDim2.fromScale(0.05, 0.45) or UDim2.fromScale(0.3, 0.45)
+notificationArea.BackgroundTransparency = 1
+notificationArea.Parent = blackFrame
+
+-- ==========================================
+-- ⚫ BOUTON DE CONTRÔLE MAÎTRE (VERSION MINI)
+-- ==========================================
+local toggleBtn = Instance.new("TextButton")
+-- Taille réduite : 42px sur mobile, 32px sur PC
+toggleBtn.Size = isMobile and UDim2.fromOffset(42, 42) or UDim2.fromOffset(32, 32)
+toggleBtn.Position = isMobile and UDim2.new(0.02, 0, 0.15, 0) or UDim2.new(0.01, 0, 0.02, 0)
+toggleBtn.BackgroundColor3 = THEME.FrameBg
+toggleBtn.TextColor3 = THEME.Accent
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = isMobile and 18 or 14 -- Texte adapté à la nouvelle taille
+toggleBtn.Text = "👁️"
+toggleBtn.Parent = gui
+
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8) -- Rayon arrondi plus discret
+local btnStroke = Instance.new("UIStroke", toggleBtn)
+btnStroke.Color = THEME.Accent
+btnStroke.Thickness = 1.5
+
+local function toggleDashboard()
+	blackFrame.Visible = not blackFrame.Visible
+	toggleBtn.Text = blackFrame.Visible and "❌" or "👁️"
+	toggleBtn.TextColor3 = blackFrame.Visible and THEME.Alert or THEME.Accent
+	btnStroke.Color = blackFrame.Visible and THEME.Alert or THEME.Accent
+	
+	pcall(function()
+		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, not blackFrame.Visible)
+	end)
+end
+
+toggleBtn.MouseButton1Click:Connect(toggleDashboard)
+if not isMobile then
+	UserInputService.InputBegan:Connect(function(input, gpe)
+		if not gpe and input.KeyCode == Enum.KeyCode.K then toggleDashboard() end
+	end)
+end
+
+-- ==========================================
+-- 📜 PANNEAU HISTORIQUE DES ITEMS (GAUCHE)
+-- ==========================================
+local historyFrame = Instance.new("Frame")
+historyFrame.Size = isMobile and UDim2.fromScale(0.44, 0.52) or UDim2.fromScale(0.46, 0.6)
+historyFrame.Position = isMobile and UDim2.fromScale(0.03, 0.28) or UDim2.fromScale(0.02, 0.2)
+historyFrame.BackgroundColor3 = THEME.FrameBg
+historyFrame.Parent = blackFrame
+
+Instance.new("UICorner", historyFrame).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", historyFrame).Color = Color3.fromRGB(40, 40, 48)
+
+local histTitle = Instance.new("TextLabel")
+histTitle.Size = UDim2.fromScale(1, 0.12)
+histTitle.BackgroundTransparency = 1
+histTitle.Text = "📜 Historique Objets"
+histTitle.Font = Enum.Font.GothamBold
+histTitle.TextColor3 = THEME.TextMain
+histTitle.TextScaled = true
+histTitle.Parent = historyFrame
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.fromScale(0.92, 0.82)
+scroll.Position = UDim2.fromScale(0.04, 0.15)
+scroll.BackgroundTransparency = 1
+scroll.ScrollBarThickness = isMobile and 6 or 4
+scroll.ScrollBarImageColor3 = THEME.Accent
+scroll.Parent = historyFrame
+
+local listLayout = Instance.new("UIListLayout", scroll)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 6)
+
+local historyData = {}
+
+local function updateHistoryUI(name)
+	local existingRow = scroll:FindFirstChild(name)
+	if existingRow then
+		existingRow.TextLabel.Text = string.format("• %s x%d", name, historyData[name])
+	else
+		local row = Instance.new("Frame")
+		row.Name = name
+		row.Size = UDim2.new(1, -8, 0, isMobile and 38 or 30)
+		row.BackgroundColor3 = THEME.CardBg
+		row.Parent = scroll
+		Instance.new("UICorner", row).CornerRadius = UDim.new(0, 6)
+		
+		local label = Instance.new("TextLabel")
+		label.Name = "TextLabel"
+		label.Size = UDim2.fromScale(0.95, 1)
+		label.Position = UDim2.fromScale(0.05, 0)
+		label.BackgroundTransparency = 1
+		label.TextColor3 = THEME.TextMain
+		label.Font = Enum.Font.GothamSemibold
+		label.TextSize = isMobile and 13 or 12
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = string.format("• %s x%d", name, historyData[name])
+		label.Parent = row
+	end
+	scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- ==========================================
+-- 🕒 PANNEAU COMPTEUR HORAIRE TEXTUEL (DROITE)
+-- ==========================================
+local hourFrame = Instance.new("Frame")
+hourFrame.Size = isMobile and UDim2.fromScale(0.46, 0.52) or UDim2.fromScale(0.46, 0.6)
+hourFrame.Position = isMobile and UDim2.fromScale(0.51, 0.28) or UDim2.fromScale(0.52, 0.2)
+hourFrame.BackgroundColor3 = THEME.FrameBg
+hourFrame.Parent = blackFrame
+
+Instance.new("UICorner", hourFrame).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", hourFrame).Color = Color3.fromRGB(40, 40, 48)
+
+local hourTitle = Instance.new("TextLabel")
+hourTitle.Size = UDim2.fromScale(1, 0.12)
+hourTitle.BackgroundTransparency = 1
+hourTitle.Text = "🕒 Rolls par Heure (Stats)"
+hourTitle.Font = Enum.Font.GothamBold
+hourTitle.TextColor3 = THEME.TextMain
+hourTitle.TextScaled = true
+hourTitle.Parent = hourFrame
+
+local hourScroll = Instance.new("ScrollingFrame")
+hourScroll.Size = UDim2.fromScale(0.92, 0.82)
+hourScroll.Position = UDim2.fromScale(0.04, 0.15)
+hourScroll.BackgroundTransparency = 1
+hourScroll.ScrollBarThickness = isMobile and 6 or 4
+hourScroll.ScrollBarImageColor3 = THEME.Accent
+hourScroll.Parent = hourFrame
+
+local hourListLayout = Instance.new("UIListLayout", hourScroll)
+hourListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+hourListLayout.Padding = UDim.new(0, 6)
+
+local rollsByHour = {}
+
+local function updateHourUI(hour, count)
+	local hourKey = tostring(hour) .. "h"
+	local existingRow = hourScroll:FindFirstChild(hourKey)
+	
+	if existingRow then
+		existingRow.TextLabel.Text = string.format("• À %s : %s Rolls", hourKey, tostring(count))
+	else
+		local row = Instance.new("Frame")
+		row.Name = hourKey
+		row.Size = UDim2.new(1, -8, 0, isMobile and 38 or 30)
+		row.BackgroundColor3 = THEME.CardBg
+		row.Parent = hourScroll
+		Instance.new("UICorner", row).CornerRadius = UDim.new(0, 6)
+		
+		local label = Instance.new("TextLabel")
+		label.Name = "TextLabel"
+		label.Size = UDim2.fromScale(0.95, 1)
+		label.Position = UDim2.fromScale(0.05, 0)
+		label.BackgroundTransparency = 1
+		label.TextColor3 = THEME.Accent
+		label.Font = Enum.Font.GothamSemibold
+		label.TextSize = isMobile and 13 or 12
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = string.format("• À %s : %s Rolls", hourKey, tostring(count))
+		label.Parent = row
+	end
+	hourScroll.CanvasSize = UDim2.new(0, 0, 0, hourListLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- ==========================================
+-- 📊 GRID DE STATISTIQUES (TOP PANEL)
+-- ==========================================
+local infoContainer = Instance.new("Frame")
+infoContainer.Size = isMobile and UDim2.fromScale(0.94, 0.18) or UDim2.fromScale(0.96, 0.12)
+infoContainer.Position = isMobile and UDim2.fromScale(0.03, 0.04) or UDim2.fromScale(0.02, 0.04)
+infoContainer.BackgroundColor3 = THEME.FrameBg
+infoContainer.Parent = blackFrame
+
+Instance.new("UICorner", infoContainer).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", infoContainer).Color = Color3.fromRGB(40, 40, 48)
+
+local gridLayout = Instance.new("UIGridLayout", infoContainer)
+gridLayout.CellSize = isMobile and UDim2.fromScale(0.48, 0.28) or UDim2.fromScale(0.155, 0.75)
+gridLayout.CellPadding = isMobile and UDim2.fromScale(0.02, 0.05) or UDim2.fromScale(0.012, 0)
+gridLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local function createStatCard(initialText)
+	local card = Instance.new("Frame")
+	card.BackgroundColor3 = THEME.CardBg
+	card.Parent = infoContainer
+	Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
+	
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.fromScale(0.9, 0.8)
+	lbl.Position = UDim2.fromScale(0.05, 0.1)
+	lbl.BackgroundTransparency = 1
+	lbl.TextColor3 = THEME.TextMuted
+	lbl.Font = Enum.Font.GothamSemibold
+	lbl.TextScaled = true
+	lbl.Text = initialText
+	lbl.Parent = card
+	return lbl
+end
+
+local sessionRollLabel = createStatCard("🎲 Session : 0")
+local totalRollLabel = createStatCard("📊 Total : --")
+local clockLabel = createStatCard("🕒 Heure : --:--")
+local timeLabel = createStatCard("⏱️ En ligne : 00h 00m")
+local batteryLabel = createStatCard("🔋 Batterie : --%")
+local perfLabel = createStatCard("⚡ Ping : --ms")
+
+-- ==========================================
+-- 🛡️ MOTEUR ANTI-IDLE SECURE & RECONNEXION
+-- ==========================================
+local function antiIdleAction()
+	pcall(function()
+		local camera = workspace.CurrentCamera
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2))
+	end)
+end
+
+player.Idled:Connect(antiIdleAction)
+
+task.spawn(function()
+	while true do
+		task.wait(math.random(40, 85))
+		antiIdleAction()
+		if os.time() % 300 < 90 then
+			pcall(function()
+				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z, false, game)
+				task.wait(0.05)
+				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Z, false, game)
+			end)
+		end
+	end
+end)
+
+local function safeReconnect()
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = "🔌 Déconnexion Détectée",
+			Text = "Reconnexion immédiate...",
+			Duration = 5
+		})
+	end)
+	task.wait(5)
+	pcall(function() TeleportService:Teleport(PLACE_ID, player) end)
+end
+
+local robloxPromptGui = CoreGui:WaitForChild("RobloxPromptGui", 10)
+if robloxPromptGui then
+	robloxPromptGui.ChildRemoved:Connect(function(child)
+		if child.Name == "ErrorPrompt" then safeReconnect() end
+	end)
+end
+
+-- ==========================================
+-- 🧠 TRAITEMENT DES EVENEMENTS (OPTIMISÉ FLUX)
+-- ==========================================
+local rollSession = 0
+local currentHour = os.date("*t").hour
+rollsByHour[currentHour] = 0
+
+local function spawnToast(itemName)
+	notificationArea:ClearAllChildren()
+	local toast = Instance.new("TextLabel")
+	toast.Size = UDim2.fromScale(1, 1)
+	toast.BackgroundTransparency = 1
+	toast.TextColor3 = THEME.TextMain
+	toast.Font = Enum.Font.GothamBold
+	toast.TextScaled = true
+	toast.Text = "🎉 Obtenu : " .. itemName
+	toast.Parent = notificationArea
+end
+
+remote.OnClientEvent:Connect(function(name, amount, action)
+	if typeof(action) == "string" and string.lower(action):find("sell") then return end
+
+	rollSession += 1
+	sessionRollLabel.Text = "🎲 Session : " .. rollSession
+	task.spawn(spawnToast, tostring(name))
+
+	historyData[name] = (historyData[name] or 0) + 1
+	updateHistoryUI(name)
+
+	local now = os.date("*t")
+	if now.hour ~= currentHour then
+		currentHour = now.hour
+		rollsByHour[currentHour] = 0
+	end
+	rollsByHour[currentHour] = (rollsByHour[currentHour] or 0) + 1
+	updateHourUI(currentHour, rollsByHour[currentHour])
+end)
+
+-- ==========================================
+-- ⏳ SYSTEM LOOP MONITORING (1 SEC)
+-- ==========================================
+local startTime = os.time()
+
+task.spawn(function()
+	updateHourUI(currentHour, 0)
+	while true do
+		local now = os.date("*t")
+		clockLabel.Text = string.format("🕒 Heure : %02d:%02d:%02d", now.hour, now.min, now.sec)
+
+		local elapsed = os.time() - startTime
+		local h = math.floor(elapsed / 3600)
+		local m = math.floor((elapsed % 3600) / 60)
+		timeLabel.Text = string.format("⏱️ En ligne : %02dh %02dm", h, m)
+
+		local leaderstats = player:FindFirstChild("leaderstats")
+		local totalRollsValue = leaderstats and leaderstats:FindFirstChild("Rolls")
+		if totalRollsValue and totalRollsValue:IsA("ValueBase") then
+			totalRollLabel.Text = "📊 Total : " .. tostring(totalRollsValue.Value)
+		end
+
+		-- Moniteur de Batterie réel
+		local batteryLevel = math.round(GuiService:GetBatteryLevel() * 100)
+		batteryLabel.Text = string.format("🔋 Batterie : %d%%", batteryLevel)
+		if batteryLevel > 50 then batteryLabel.TextColor3 = THEME.Success
+		elseif batteryLevel > 20 then batteryLabel.TextColor3 = THEME.Warning
+		else batteryLabel.TextColor3 = THEME.Alert end
+
+		-- Réseau Ping
+		local ping = math.round(Stats.Network.ServerToClientPing:GetValue() * 100)
+		perfLabel.Text = string.format("⚡ Ping : %dms", ping)
+		if ping < 100 then perfLabel.TextColor3 = THEME.Success
+		elseif ping < 200 then perfLabel.TextColor3 = THEME.Warning
+		else perfLabel.TextColor3 = THEME.Alert end
+
+		task.wait(1)
+	end
+end)
