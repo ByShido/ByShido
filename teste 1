@@ -175,10 +175,6 @@ end
 task.wait(0.6)
 loadGui:Destroy()
 
--- ========================================================================
--- [PARTIE 2] 📊 SCRIPT PRINCIPAL DASHBOARD (SÉCURISÉ CONTRE LES CRASHS)
--- ========================================================================
-
 -- Sécurité anti-blocage : La remote est vérifiée ICI. Si elle manque, le chargement s'est quand même fermé !
 local interfaceFolder = ReplicatedStorage:WaitForChild("Interface", 10)
 local remote = interfaceFolder and interfaceFolder:WaitForChild("UpdateMountInventory", 10)
